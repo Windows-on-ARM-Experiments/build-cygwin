@@ -1,58 +1,82 @@
-HOST_TRIPLE=i686-pc-linux-gnu
-HOST_PREFIX=/opt/devel/cygwin
+set -x
+set -e
 
-TARGET_TRIPLE=i686-pc-cygwin
+HOST_TRIPLE=x86_64-pc-linux-gnu
+HOST_PREFIX=$PWD/install
+
+TARGET_TRIPLE=x86_64-pc-cygwin
 TARGET_PREFIX=/usr
 
 SYSROOT=${HOST_PREFIX}/${TARGET_TRIPLE}/sys-root
 
-SRCTOP=/mnt/junk/gcc45c/src
-BUILDTOP=/mnt/junk/gcc45c/build
-GCCVER=4.5.0
-PKGREL=2
+SRCTOP=${PWD}/src
+BUILDTOP=${PWD}/build
 
+BINUTILS_VERSION=2.42
+BINUTILS_CYGWIN_VERSION=${BINUTILS_VERSION}-1
+GCC_VERSION=13.2.1
+GCC_PACKAGE_VERSION=13-20240203
+GCC_CYGWIN_VERSION=${GCC_VERSION}+20240203-0.1
+CYGWIN_VERSION=3.6.0
+CYGWIN_CYGWIN_VERSION=${CYGWIN_VERSION}-0.52.g585855eef863
+COCOM_VERSION=0.996
+COCOM_CYGWIN_VERSION=${COCOM_VERSION}-2
+ZLIB_VERSION=1.3
+ZLIB_CYGWIN_VERSION=${ZLIB_VERSION}-1
 
-DOWNLOADS=/opt/devel/cygwin/src/DOWNLOADS
-MIRROR=http://mirrors.kernel.org/sourceware/cygwin/release
-export PATH=${HOST_PREFIX}/bin:/mnt/junk/private/bin:${PATH}
+WIN32API_VERSION=11.0.1
+WIN32API_CYGWIN_VERSION=${WIN32API_VERSION}-1
+
+DOWNLOADS=${PWD}/downloads
+MIRROR=https://mirrors.kernel.org/sourceware/cygwin/x86_64/release
+export PATH=${HOST_PREFIX}/bin:${PATH}
 
 mkdir -p ${BUILDTOP}
 mkdir -p ${SRCTOP}
 mkdir -p ${SYSROOT}
+mkdir -p ${DOWNLOADS}
 
 do_get () {
   pushd ${DOWNLOADS} >/dev/null
-  wget ${MIRROR}/$1
+  wget -c ${MIRROR}/$1
   popd >/dev/null 
 }
 
-
-mkdir -p ${DOWNLOADS}
-do_get binutils/binutils-2.20.51-2-src.tar.bz2
-do_get gcc4/gcc4-4.5.0-1-src.tar.bz2
-do_get cygwin/cygwin-1.7.6-1-src.tar.bz2
+do_get binutils/binutils-${BINUTILS_CYGWIN_VERSION}-src.tar.zst
+do_get gcc/gcc-${GCC_CYGWIN_VERSION}-src.tar.zst
+do_get zlib/zlib-${ZLIB_CYGWIN_VERSION}-src.tar.zst
+do_get cocom/cocom-${COCOM_CYGWIN_VERSION}-src.tar.xz
+do_get cygwin/cygwin-${CYGWIN_CYGWIN_VERSION}-src.tar.xz
 
 ############################################
 ## Prepare $target libs and headers
 ############################################
-do_get binutils/binutils-2.20.51-2.tar.bz2
-do_get w32api/w32api-3.14-1.tar.bz2
-do_get cygwin/cygwin-1.7.6-1.tar.bz2
-do_get zlib/zlib-devel/zlib-devel-1.2.3-10.tar.bz2
-do_get mingw/mingw-zlib/mingw-zlib-devel/mingw-zlib-devel-1.2.3-10.tar.bz2
-do_get mingw-runtime/mingw-runtime-3.18-1.tar.bz2
-do_get libiconv/libiconv-1.13.1-1.tar.bz2
-do_get gettext/gettext-0.17-11.tar.bz2
+do_get binutils/binutils-${BINUTILS_CYGWIN_VERSION}.tar.zst
+do_get w32api-headers/w32api-headers-${WIN32API_CYGWIN_VERSION}.tar.xz
+do_get w32api-runtime/w32api-runtime-${WIN32API_CYGWIN_VERSION}.tar.xz
+do_get zlib/zlib-devel/zlib-devel-${ZLIB_CYGWIN_VERSION}.tar.zst
+do_get cygwin/cygwin-devel/cygwin-devel-${CYGWIN_CYGWIN_VERSION}.tar.xz
+do_get libiconv/libiconv-devel/libiconv-devel-1.17-1.tar.xz
+do_get gettext/gettext-devel/gettext-devel-0.22.4-1.tar.xz
+do_get gettext/libintl-devel/libintl-devel-0.22.4-1.tar.xz
+
+# TODO: Those were in the original script but no longer exist.
+#do_get mingw-runtime/mingw-runtime-3.18-1.tar.bz2
+#do_get mingw/mingw-zlib/mingw-zlib-devel/mingw-zlib-devel-1.2.3-10.tar.bz2
 
 cd ${SYSROOT}
-tar xjf ${DOWNLOADS}/binutils-2.20.51-2.tar.bz2        usr/include usr/lib
-tar xjf ${DOWNLOADS}/gettext-0.17-11.tar.bz2           usr/include usr/lib
-tar xjf ${DOWNLOADS}/libiconv-1.13.1-1.tar.bz2         usr/include usr/lib
-tar xjf ${DOWNLOADS}/mingw-runtime-3.18-1.tar.bz2      usr/include usr/lib
-tar xjf ${DOWNLOADS}/mingw-zlib-devel-1.2.3-10.tar.bz2 usr/include usr/lib
-tar xjf ${DOWNLOADS}/zlib-devel-1.2.3-10.tar.bz2       usr/include usr/lib
-tar xjf ${DOWNLOADS}/w32api-3.14-1.tar.bz2             usr/include usr/lib
-tar xjf ${DOWNLOADS}/cygwin-1.7.6-1.tar.bz2            usr/include usr/lib
+tar -xf ${DOWNLOADS}/binutils-${BINUTILS_CYGWIN_VERSION}.tar.zst usr/include usr/lib
+tar -xf ${DOWNLOADS}/w32api-headers-${WIN32API_CYGWIN_VERSION}.tar.xz usr/include
+tar -xf ${DOWNLOADS}/w32api-runtime-${WIN32API_CYGWIN_VERSION}.tar.xz usr/include usr/lib
+tar -xf ${DOWNLOADS}/cygwin-devel-${CYGWIN_CYGWIN_VERSION}.tar.xz usr/include usr/lib
+tar -xf ${DOWNLOADS}/zlib-devel-${ZLIB_CYGWIN_VERSION}.tar.zst usr/include usr/lib
+tar -xf ${DOWNLOADS}/libiconv-devel-1.17-1.tar.xz usr/include usr/lib
+tar -xf ${DOWNLOADS}/gettext-devel-0.22.4-1.tar.xz usr/lib
+tar -xf ${DOWNLOADS}/libintl-devel-0.22.4-1.tar.xz usr/include usr/lib
+
+# TODO: Those were in the original script but no longer exist.
+#tar -xf ${DOWNLOADS}/mingw-runtime-3.18-1.tar.bz2 usr/include usr/lib
+#tar -xf ${DOWNLOADS}/mingw-zlib-devel-1.2.3-10.tar.bz2 usr/include usr/lib
 
 find ./usr/lib -name '*.dll.a' -o -name '*.la' | xargs rm
 
@@ -61,313 +85,272 @@ find ./usr/lib -name '*.dll.a' -o -name '*.la' | xargs rm
 # main lib dir, and not just in the w32api subdir.  In any case,
 # this is *absolutely* necessary during the build of the language
 # runtime libraries...
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libkernel32.a .)
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libuser32.a   .)
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libadvapi32.a .)
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libshell32.a  .)
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libgdi32.a    .)
-(cd ${SYSROOT}${TARGET_PREFIX}/lib && ln -fs w32api/libcomdlg32.a .)
-
-
-# ensure linux package installed: libgmp-devel, libgmp10
-# ensure linux package installed: mpfr-devel, libmpfr1
-# ensure linux package installed: libmpc-devel, libmpc2
-# ensure linux package installed: libcloog-devel, libcloog0
-# ensure linux package installed: libppl-devel, libppl7
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libkernel32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libuser32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libadvapi32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libshell32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libgdi32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libcomdlg32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libntdll.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libnetapi32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libpsapi.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libuserenv.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libnetapi32.a .)
+(cd ${SYSROOT}/usr/lib && ln -fs w32api/libdbghelp.a .)
 
 ############################################
-## custom autoconf, automake
-## gcc-4.5.0 requires ac-2.64, am-1.11.1
+## unpack binutils, apply patches
 ############################################
-cd ${DOWNLOADS}
-wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.64.tar.bz2
-wget http://ftp.gnu.org/gnu/automake/automake-1.11.1.tar.bz2
 
 cd ${SRCTOP}
-tar xvjf ${DOWNLOADS}/autoconf-2.64.tar.bz2
-tar xvjf ${DOWNLOADS}/automake-1.11.1.tar.bz2
-cd ${BUILDTOP}
-mkdir autoconf
-cd autoconf
-${SRCTOP}/autoconf-2.64/configure --prefix=/mnt/junk/private
-make
-make install
+tar -xf ${DOWNLOADS}/binutils-${BINUTILS_CYGWIN_VERSION}-src.tar.zst
+
+pushd binutils-${BINUTILS_CYGWIN_VERSION}.src
+tar -xf binutils-${BINUTILS_VERSION}.tar.xz
+cd binutils-${BINUTILS_VERSION}
+cat ../binutils-${BINUTILS_VERSION}-cygwin-config-rpath.patch | patch -p2
+cat ../binutils-${BINUTILS_VERSION}-cygwin-pep-dll-double-definition.patch | patch -p2
+cat ../binutils-${BINUTILS_VERSION}-cygwin-shared-libs.patch | patch -p2
+popd
+
+############################################
+## unpack gcc, apply patches
+############################################
+
+cd ${SRCTOP}
+rm -rf gcc-${GCC_CYGWIN_VERSION}.src
+tar -xf ${DOWNLOADS}/gcc-${GCC_CYGWIN_VERSION}-src.tar.zst
+
+pushd gcc-${GCC_CYGWIN_VERSION}.src
+tar -xf gcc-${GCC_PACKAGE_VERSION}.tar.xz
+cd gcc-${GCC_PACKAGE_VERSION}
+cat ../0001-Cygwin-use-SysV-ABI-on-x86_64.patch | patch -p1
+cat ../0002-Cygwin-add-dummy-pthread-tsaware-and-large-address-a.patch | patch -p1
+cat ../0003-Cygwin-handle-dllimport-properly-in-medium-model-V2.patch | patch -p1
+cat ../0004-Cygwin-MinGW-skip-test.patch | patch -p1
+cat ../0005-Cygwin-define-RTS_CONTROL_ENABLE-and-DTR_CONTROL_ENA.patch | patch -p1
+cat ../0007-Cygwin-__cxa-atexit.patch | patch -p1
+cat ../0008-Cygwin-libgomp-soname.patch | patch -p1
+cat ../0009-Cygwin-g-time.patch | patch -p1
+cat ../0010-Cygwin-newlib-ftm.patch | patch -p1
+cat ../0011-Cygwin-define-STD_UNIX.patch | patch -p1
+cat ../v4-0001-libstdc-Implement-most-of-locale-features-for-newlib.patch | patch -p1
+cat ../0101-Cygwin-enable-libgccjit-not-just-for-MingW.patch | patch -p1
+cat ../0102-Cygwin-testsuite-fixes-for-libgccjit.patch | patch -p1
+cat ../0201-Cygwin-ada-shared-prefix.patch | patch -p2
+popd
+
+############################################
+## unpack zlib, apply patches
+############################################
+
+cd ${SRCTOP}
+rm -rf zlib-${ZLIB_CYGWIN_VERSION}.src
+tar -xf ${DOWNLOADS}/zlib-${ZLIB_CYGWIN_VERSION}-src.tar.zst
+
+pushd zlib-${ZLIB_CYGWIN_VERSION}.src
+tar -xf zlib-${ZLIB_VERSION}.tar.xz
+cd zlib-${ZLIB_VERSION}
+cat ../zlib-1.3-configure.patch | patch -p2
+cat ../zlib-1.3-gzopen_w.patch | patch -p2
+popd
+
+############################################
+## unpack cocom
+############################################
+
+cd ${SRCTOP}
+rm -rf cocom-${COCOM_CYGWIN_VERSION}.src
+tar -xf ${DOWNLOADS}/cocom-${COCOM_CYGWIN_VERSION}-src.tar.xz
+
+pushd cocom-${COCOM_CYGWIN_VERSION}.src
+tar -xf cocom-${COCOM_VERSION}.tar.gz
+popd
+
+############################################
+## unpack cygwin
+############################################
+
+cd ${SRCTOP}
+rm -rf cygwin-${CYGWIN_CYGWIN_VERSION}.src
+tar -xf ${DOWNLOADS}/cygwin-${CYGWIN_CYGWIN_VERSION}-src.tar.xz
+
+pushd cygwin-${CYGWIN_CYGWIN_VERSION}.src
+tar -xf newlib-cygwin-${CYGWIN_VERSION}.tar.bz2
+popd
+
+############################################
+## build binutils
+############################################
 
 cd ${BUILDTOP}
-mkdir automake
-cd automake
-${SRCTOP}/automake-1.11.1/configure --prefix=/mnt/junk/private
-make
-make install
-mkdir -p /mnt/junk/private/share/aclocal
-echo '/usr/share/aclocal' > /mnt/junk/private/share/aclocal/dirlist
-
-############################################
-## unpack gcc, binutils source
-############################################
-cd $SRCTOP
-tar xvjf ${DOWNLOADS}/binutils-2.20.51-2-src.tar.bz2
-tar xvjf ${DOWNLOADS}/gcc4-4.5.0-1-src.tar.bz2
-tar xvjf gcc-4.5.0.tar.bz2
-
-############################################
-## apply patches
-############################################
-cd gcc-4.5.0
-patch -p2 < ../classpath-0.98-FIONREAD.patch
-patch -p2 < ../classpath-0.98-build.patch
-patch -p2 < ../classpath-0.98-awt.patch
-patch -p2 < ../gcc45-ada.diff
-patch -p0 < ../gcc45-cygwin-lto.diff
-patch -p2 < ../gcc45-ehdebug.diff
-patch -p2 < ../gcc45-libffi.diff
-patch -p2 < ../gcc45-libstdc.diff
-patch -p2 < ../gcc45-misc-core.diff
-patch -p2 < ../gcc45-mnocygwin.diff
-patch -p0 < ../gcc45-sig-unwind.diff
-patch -p2 < ../gcc45-skiptest.diff
-patch -p0 < ../gcc45-pruneopts-term.diff
-patch -p2 < ../gcc45-weak-binding.diff
-patch -p2 < ../gcc4-4.5.0-1.cygwin.patch
-cd ..
-
-
-############################################
-## binutils
-############################################
-cd ${BUILDTOP}
-mkdir binutils
+rm -rf binutils
+mkdir -p binutils
 cd binutils
-${SRCTOP}/binutils-2.20.51-2/configure \
+
+${SRCTOP}/binutils-${BINUTILS_CYGWIN_VERSION}.src/binutils-${BINUTILS_VERSION}/configure \
   --prefix=${HOST_PREFIX} \
   --target=${TARGET_TRIPLE} \
-  --disable-bootstrap --enable-version-specific-runtime-libs \
-  --enable-static --enable-shared --enable-shared-libgcc \
-  --disable-__cxa_atexit --with-gnu-ld --with-gnu-as --with-dwarf2 \
-  --disable-sjlj-exceptions --enable-languages=c,c++,fortran --disable-symvers \
-  --enable-threads=posix --with-arch=i686 --with-tune=generic \
-  --with-newlib \
-  --with-build-sysroot=${SYSROOT} \
+  --disable-bootstrap \
+  --enable-static \
+  --enable-shared \
+  --enable-host-shared \
+  --enable-64-bit-bfd \
+  --enable-install-libiberty \
+  --enable-targets=x86_64-pep \
   --with-sysroot=${SYSROOT} \
-  --datadir=${HOST_PREFIX}/share \
-  --mandir=${HOST_PREFIX}/share/man \
-  --infodir=${HOST_PREFIX}/share/info \
-  --libexecdir=${HOST_PREFIX}/lib \
-  --enable-libgomp --enable-libssp
+  --with-build-sysroot=${SYSROOT} \
+  --with-system-zlib \
+  --with-gcc-major-version-only \
+   lt_cv_deplibs_check_method=pass_all
 
-# --enable-graphite --disable-lto
+make V=1 -j$(nproc)
 
-make
-mkdir ${BUILDTOP}/binutils-inst
+rm -rf ${BUILDTOP}/binutils-inst
+mkdir -p ${BUILDTOP}/binutils-inst
 make install DESTDIR=${BUILDTOP}/binutils-inst
-cd ${BUILDTOP}/binutils-inst
-tar cvJf ../binutils-2.20.51-2-cygwin.tar.xz opt
-cd /
-tar xvJf ${BUILDTOP}/binutils-2.20.51-2-cygwin.tar.xz
+
+cd ${BUILDTOP}/binutils-inst/${HOST_PREFIX:1}
+tar -cJf ${BUILDTOP}/binutils-${BINUTILS_CYGWIN_VERSION}-cygwin.tar.xz *
+
+cd ${HOST_PREFIX}
+tar -xf ${BUILDTOP}/binutils-${BINUTILS_CYGWIN_VERSION}-cygwin.tar.xz
 
 ############################################
-## gcc
+## build gcc
 ############################################
-cd ${SRCTOP}/gcc-4.5.0
-pushd libstdc++-v3 >/dev/null
-cat <<"EOF" > crossconfig.m4.patch
---- crossconfig.m4.orig 2009-06-02 15:15:03.000000000 -0400
-+++ crossconfig.m4      2010-08-22 22:35:55.345320303 -0400
-@@ -141,7 +141,7 @@
-        ;;
-     esac
-     ;;
--  *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-knetbsd*-gnu)
-+  *-linux* | *-uclinux* | *-gnu* | *-kfreebsd*-gnu | *-knetbsd*-gnu | *-cygwin* )
-     GLIBCXX_CHECK_COMPILER_FEATURES
-     GLIBCXX_CHECK_LINKER_FEATURES
-     GLIBCXX_CHECK_MATH_SUPPORT
-EOF
-patch -p0 < ./crossconfig.m4.patch
-popd >/dev/null
-gcc_reconf() {
-	local S=${SRCTOP}/gcc-4.5.0
-        pushd ${S} >/dev/null
-        cd ${S}
-        autoconf || exit -1
-        cd ${S}/gcc
-        autoconf || exit -1
-        autoheader || exit -1
-        cd ${S}/libiberty
-        autoconf || exit -1
-        cd ${S}/libstdc++-v3
-        autoconf || exit -1
-        cd ${S}/libjava
-        autoconf || exit -1
-        cd ${S}/libffi
-        aclocal -I . -I .. -I ../config || exit -1
-        autoconf || exit -1
-        cd ${S}
-        for x in boehm-gc libffi libgfortran libgomp libjava libmudflap libssp libstdc++-v3 zlib;
-        do
-                pushd $x >/dev/null
-                automake || exit -1
-                popd >/dev/null
-        done
-        cd ${S}/gcc/testsuite/ada/acats
-        chmod a+x run_test.exp
-	popd >/dev/null
-}
-gcc_reconf
 
 cd ${BUILDTOP}
-mkdir gcc
+rm -rf gcc
+mkdir -p gcc
 cd gcc
-${SRCTOP}/gcc-4.5.0/configure \
+
+export glibcxx_cv_realpath=yes
+
+# --enable-languages=ada,d,jit
+# --enable-libada
+${SRCTOP}/gcc-${GCC_CYGWIN_VERSION}.src/gcc-${GCC_PACKAGE_VERSION}/configure \
   --prefix=${HOST_PREFIX} \
   --target=${TARGET_TRIPLE} \
-  --disable-bootstrap --enable-version-specific-runtime-libs \
-  --enable-static --enable-shared --enable-shared-libgcc \
-  --disable-__cxa_atexit --with-gnu-ld --with-gnu-as --with-dwarf2 \
-  --disable-sjlj-exceptions --enable-languages=c,c++,fortran --disable-symvers \
-  --enable-threads=posix --with-arch=i686 --with-tune=generic \
-  --with-newlib \
-  --with-build-sysroot=${SYSROOT} \
+  --libexecdir=${HOST_PREFIX}/usr/lib \
+  --enable-static \
+  --enable-shared \
+  --enable-shared-libgcc \
+  --enable-languages=c,c++,fortran,lto,objc,obj-c++ \
+  --enable-version-specific-runtime-libs \
+  --enable-__cxa_atexit \
+  --enable-graphite \
+  --enable-threads=posix \
+  --enable-libatomic \
+  --enable-libgomp \
+  --enable-libquadmath \
+  --enable-libquadmath-support \
+  --enable-linker-build-id \
+  --enable-libstdcxx-filesystem-ts \
+  --disable-bootstrap \
+  --disable-libssp \
+  --disable-symvers \
+  --disable-multilib \
   --with-sysroot=${SYSROOT} \
-  --datadir=${HOST_PREFIX}/share \
-  --mandir=${HOST_PREFIX}/share/man \
-  --infodir=${HOST_PREFIX}/share/info \
-  --libexecdir=${HOST_PREFIX}/lib \
-  --enable-libgomp --enable-libssp
-make
-mkdir ${BUILDTOP}/gcc-inst
+  --with-build-sysroot=${SYSROOT} \
+  --with-gcc-major-version-only \
+  --with-dwarf2 \
+  --with-arch=nocona \
+  --with-tune=generic \
+  --with-gnu-ld \
+  --with-gnu-as \
+  --with-cloog-include=${SYSROOT}/usr/include/cloog-isl \
+  --without-libiconv-prefix \
+  --without-libintl-prefix \
+  --with-system-zlib \
+  --with-default-libstdcxx-abi=gcc4-compatible
+
+make V=1 -j$(nproc)
+
+rm -rf ${BUILDTOP}/gcc-inst
+mkdir -p ${BUILDTOP}/gcc-inst
 make install DESTDIR=${BUILDTOP}/gcc-inst
-D=${BUILDTOP}/gcc-inst
-cd ${D}
 
-# don't install target libiberty
-rm -f ${HOST_PREFIX:1}/lib/libiberty.a
-rm -f ${HOST_PREFIX:1}/${TARGET_TRIPLE}/lib/libiberty.a
+cd ${BUILDTOP}/gcc-inst/${HOST_PREFIX:1}
+tar -cJf ${BUILDTOP}/gcc-${GCC_CYGWIN_VERSION}-cygwin.tar.xz *
 
-# move runtime DLLs...
-mkdir -p ${SYSROOT:1}${TARGET_PREFIX}/bin
-mv ${HOST_PREFIX:1}/bin/*.dll ${SYSROOT:1}${TARGET_PREFIX}/bin
-
-# libgcc1
-cd ${D}
-tar cvJf ${BUILDTOP}/libgcc1-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${SYSROOT:1}${TARGET_PREFIX}/bin/cyggcc_s-1.dll
-
-# libstdc++6
-cd ${D}
-tar cvJf ${BUILDTOP}/libstdc++6-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${SYSROOT:1}${TARGET_PREFIX}/bin/cygstdc++-6.dll
-
-# libssp0
-cd ${D}
-tar cvJf ${BUILDTOP}/libssp0-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${SYSROOT:1}${TARGET_PREFIX}/bin/cygssp-0.dll
-
-# libgfortran3
-cd ${D}
-tar cvJf ${BUILDTOP}/libgfortran3-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${SYSROOT:1}${TARGET_PREFIX}/bin/cyggfortran-3.dll
-
-# libgomp1
-cd ${D}
-tar cvJf ${BUILDTOP}/libgomp1-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${SYSROOT:1}${TARGET_PREFIX}/bin/cyggomp-1.dll
-
-
-# g++
-cd ${D}
-tar cvJf ${BUILDTOP}/gcc-g++-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/include/c++ \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-c++ \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-g++ \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/cc1plus \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libstdc++.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libstdc++.dll.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libstdc++.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libsupc++.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libsupc++.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libstdc++.dll.a-gdb.py \
-	${HOST_PREFIX:1}/share/gcc-${GCCVER}/python/libstdcxx/__init__.py \
-	${HOST_PREFIX:1}/share/gcc-${GCCVER}/python/libstdcxx/v6/__init__.py \
-	${HOST_PREFIX:1}/share/gcc-${GCCVER}/python/libstdcxx/v6/printers.py \
-	${HOST_PREFIX:1}/share/man/man1/${TARGET_TRIPLE}-g++.1
-
-
-# gfortran
-tar cvJf ${BUILDTOP}/gcc-gfortran-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/finclude \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-gfortran \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/f951 \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgfortran.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgfortran.dll.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgfortran.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgfortranbegin.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgfortranbegin.la \
-	${HOST_PREFIX:1}/share/info/gfortran.info \
-	${HOST_PREFIX:1}/share/man/man1/${TARGET_TRIPLE}-gfortran.1
-
-# gcc
-tar cvJf ${BUILDTOP}/gcc-core-${GCCVER}-${PKGREL}-cygwin.tar.xz \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/include/*.h \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/include/ssp \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/include-fixed \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/install-tools \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-cpp \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-gcc \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-gcc-${GCCVER} \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-gccbug \
-	${HOST_PREFIX:1}/bin/${TARGET_TRIPLE}-gcov \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/cc1 \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/collect2 \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/crtbegin.o \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/crtend.o \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/crtfastmath.o \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgcc.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgcc_eh.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgcc_s.dll.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgcov.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgomp.spec \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgomp.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgomp.dll.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libgomp.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libssp.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libssp.dll.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libssp.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libssp_nonshared.a \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/libssp_nonshared.la \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/lto-wrapper \
-	${HOST_PREFIX:1}/lib/gcc/${TARGET_TRIPLE}/${GCCVER}/plugin/ \
-	${HOST_PREFIX:1}/share/locale/* \
-	${HOST_PREFIX:1}/share/info/cpp.info \
-	${HOST_PREFIX:1}/share/info/cppinternals.info \
-	${HOST_PREFIX:1}/share/info/gcc.info \
-	${HOST_PREFIX:1}/share/info/gccinstall.info \
-	${HOST_PREFIX:1}/share/info/gccint.info \
-	${HOST_PREFIX:1}/share/info/libgomp.info \
-	${HOST_PREFIX:1}/share/man/man1/${TARGET_TRIPLE}-cpp.1 \
-	${HOST_PREFIX:1}/share/man/man1/${TARGET_TRIPLE}-gcc.1 \
-	${HOST_PREFIX:1}/share/man/man1/${TARGET_TRIPLE}-gcov.1 \
-	${HOST_PREFIX:1}/share/man/man7/gpl.7 \
-	${HOST_PREFIX:1}/share/man/man7/gfdl.7 \
-	${HOST_PREFIX:1}/share/man/man7/fsf-funding.7
-
-cd /
-tar xvJf ${BUILDTOP}/gcc-core-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/gcc-g++-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/gcc-gfortran-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/libgcc1-${GCCVER}-${PKGREL}-cygwin.tar.xz 
-tar xvJf ${BUILDTOP}/libgfortran3-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/libssp0-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/libstdc++6-${GCCVER}-${PKGREL}-cygwin.tar.xz
-tar xvJf ${BUILDTOP}/libgomp1-${GCCVER}-${PKGREL}-cygwin.tar.xz
+cd ${HOST_PREFIX}
+tar -xf ${BUILDTOP}/gcc-${GCC_CYGWIN_VERSION}-cygwin.tar.xz
 
 ############################################
-## cygwin
+## build zlib
 ############################################
-cd ${SRCTOP}
-tar xvjf ${DOWNLOADS}/cygwin-1.7.6-1-src.tar.bz2
+
+cd ${SRCTOP}/zlib-${ZLIB_CYGWIN_VERSION}.src/zlib-${ZLIB_VERSION}
+
+rm -f Makefile zconf.h
+
+CROSS_PREFIX=x86_64-pc-cygwin- \
+./configure \
+  --prefix=${HOST_PREFIX} \
+  --includedir=${HOST_PREFIX}/include \
+  --libdir=${HOST_PREFIX}/lib
+
+make V=1 -j$(nproc) \
+  -f win32/Makefile.gcc \
+  CC=x86_64-pc-cygwin-gcc \
+  AR=x86_64-pc-cygwin-ar \
+  RC=x86_64-pc-cygwin-windres \
+  STRIP=: \
+  SHAREDLIB=cygz.dll \
+  IMPLIB=libz.dll.a
+
+rm -rf ${BUILDTOP}/zlib-inst
+mkdir -p ${BUILDTOP}/zlib-inst
+
+make install DESTDIR=${BUILDTOP}/zlib-inst \
+  -f win32/Makefile.gcc \
+  SHAREDLIB=cygz.dll \
+  IMPLIB=libz.dll.a \
+  SHARED_MODE=1 \
+  prefix=${HOST_PREFIX} \
+  BINARY_PATH=${HOST_PREFIX}/bin \
+  INCLUDE_PATH=${HOST_PREFIX}/include \
+  LIBRARY_PATH=${HOST_PREFIX}/lib
+
+cd ${BUILDTOP}/zlib-inst/${HOST_PREFIX:1}
+tar -cJf ${BUILDTOP}/zlib-${ZLIB_CYGWIN_VERSION}-cygwin.tar.xz *
+
+cd ${HOST_PREFIX}
+tar -xf ${BUILDTOP}/zlib-${ZLIB_CYGWIN_VERSION}-cygwin.tar.xz
+
+############################################
+## build cocom
+############################################
+
 cd ${BUILDTOP}
-mkdir cygwin
+rm -rf cocom
+mkdir -p cocom
+cd cocom
+
+${SRCTOP}/cocom-${COCOM_CYGWIN_VERSION}.src/cocom-${COCOM_VERSION}/configure \
+  --prefix=${HOST_PREFIX} \
+  --target=${TARGET_TRIPLE} \
+
+make V=1 -j$(nproc)
+
+rm -rf ${BUILDTOP}/cocom-inst
+mkdir -p ${BUILDTOP}/cocom-inst
+make install DESTDIR=${BUILDTOP}/cocom-inst
+
+cd ${BUILDTOP}/cocom-inst/${HOST_PREFIX:1}
+tar -cJf ${BUILDTOP}/cocom-${COCOM_CYGWIN_VERSION}-cygwin.tar.xz *
+
+cd ${HOST_PREFIX}
+tar -xf ${BUILDTOP}/cocom-${COCOM_CYGWIN_VERSION}-cygwin.tar.xz
+
+############################################
+## build cygwin
+############################################
+
+cd ${BUILDTOP}
+rm -rf cygwin
+mkdir -p cygwin
 cd cygwin
 
 ### note: because by default cygwin is build using -Werror,
@@ -376,52 +359,32 @@ cd cygwin
 ### add -Wno-error, and then re-make). Or configure with
 ### CFLAGS="-Wno-error" [untested].
 
-${SRCTOP}/cygwin-1.7.6-1/configure \
-	--prefix=/usr \
-	--sysconfdir=/etc \
-	--host=i686-pc-cygwin \
-	--target=i686-pc-cygwin
-make
+pushd ${SRCTOP}/cygwin-${CYGWIN_CYGWIN_VERSION}.src/newlib-cygwin/winsup
+./autogen.sh
+popd
 
+CFLAGS="-Wno-error -Wno-narrowing" \
+CFLAGS_FOR_TARGET="-Wno-error -Wno-narrowing" \
+CXXFLAGS="-Wno-error -Wno-narrowing" \
+CXXFLAGS_FOR_TARGET="-Wno-error -Wno-narrowing -I${HOST_PREFIX}/include -I${HOST_PREFIX}/${TARGET_TRIPLE}/include" \
+LDFLAGS_FOR_TARGET="-L${HOST_PREFIX}/lib -L${HOST_PREFIX}/${TARGET_TRIPLE}/lib" \
+${SRCTOP}/cygwin-${CYGWIN_CYGWIN_VERSION}.src/newlib-cygwin/configure \
+  --prefix=${HOST_PREFIX} \
+  --sysconfdir=/etc \
+  --host=${TARGET_TRIPLE} \
+  --target=${TARGET_TRIPLE} \
+  --disable-doc \
+  --disable-dumper \
+  --with-cross-bootstrap
 
-mkdir ${BUILDTOP}/cygwin-inst
-DATE=$(date +%Y%m%d)
+make V=1 -j$(nproc)
+
+rm -rf ${BUILDTOP}/cygwin-inst
+mkdir -p ${BUILDTOP}/cygwin-inst
 make install DESTDIR=${BUILDTOP}/cygwin-inst
-D=${BUILDTOP}/cygwin-inst
 
-### some manipulations to make the inst tree look "correct"
-cd ${D}/usr
-mv i686-pc-cygwin/{include,lib} .
-mv i686-pc-cygwin/share/doc/mingw-runtime share/doc/
-mv i686-pc-cygwin/bin/mingwm10.dll bin/
-rmdir i686-pc-cygwin/bin
-rmdir i686-pc-cygwin/share/doc
-rmdir i686-pc-cygwin/share
-rmdir i686-pc-cygwin
-rm -f include/iconv.h
-rm -f share/info/{configure.info,standards.info}
-cd bin/
-cp -p ${BUILDTOP}/cygwin/i686-pc-cygwin/winsup/cygwin/cygwin1.dbg .
-rename cygwin1 cygwin1-${DATE} cygwin1*
-mv cyglsa.dll cyglsa-${DATE}.dll
-# oddly, cp -p DTRT, but mv does not
-cp -p cyglsa64.dll "cyglsa64-${DATE}.dll"
-rm -f cyglsa64.dll
+cd ${BUILDTOP}/cygwin-inst/${HOST_PREFIX:1}
+tar -cJf ${BUILDTOP}/cygwin-${CYGWIN_CYGWIN_VERSION}.tar.xz *
 
-# and...package
-tar -C ${D} -cvJf ${BUILDTOP}/cygwin1-${DATE}.tar.xz \
-	--exclude usr/lib/mingw     --exclude usr/lib/w32api \
-	--exclude usr/include/mingw --exclude usr/include/w32api \
-	--exclude usr/bin/mingwm10.dll \
-	--exclude usr/share/doc/mingw-runtime \
-	--exclude usr/share/man/manmingw \
-	etc/ usr/
-tar -C ${D} -cvJf ${BUILDTOP}/w32api-${DATE}.tar.xz \
-	usr/include/w32api usr/lib/w32api
-tar -C ${D} -cvJf ${BUILDTOP}/mingw-runtime-${DATE}.tar.xz \
-	usr/bin/mingwm10.dll \
-	usr/include/mingw usr/lib/mingw \
-	usr/share/doc/mingw-runtime \
-	usr/share/man/manmingw
-
-
+cd ${HOST_PREFIX}
+tar -xf ${BUILDTOP}/cygwin-${CYGWIN_CYGWIN_VERSION}.tar.xz
